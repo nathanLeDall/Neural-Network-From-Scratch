@@ -51,7 +51,7 @@ jobs:
         if: always()  # ensures upload even if the run fails
         uses: actions/upload-artifact@v4
         with:
-          name: output-${{ matrix.config }}
+          name: output-${{ matrix.config.replace('/', '_') }}
           path: |
             logs/
             output/
