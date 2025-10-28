@@ -4,6 +4,7 @@ import random
 import argparse
 import json
 import sys
+import os
 
 class Activation:
     
@@ -157,7 +158,7 @@ def main():
 
     test = Network(size=config.get("size"))
     
-    size_of_file, data_labels = read_data(config.get("data_file"))
+    size_of_file, data_labels = read_data(os.path.join("data",config.get("data_file")))
     test.test(data_labels)
     test.train(data_labels, config.get("epochs"))
     test.test(data_labels)
