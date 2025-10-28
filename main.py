@@ -1,7 +1,9 @@
 import numpy as np
 import math
 import random
-print ("test")
+import argparse
+import json
+import sys
 
 class Activation:
     
@@ -136,12 +138,35 @@ def read_data(file_path):
         print(f"An error occurred: {e}")
         return None, None, None
 
- 
+def main():
+    parser = argparse.ArgumentParser(description="Run script with a configuration file.")
+    parser.add_argument("--config", required=True, help="Path to configuration JSON file")
+    args = parser.parse_args()
+
+    # Load the config
+    try:
+        with open(args.config, "r") as f:
+            config = json.load(f)
+    except Exception as e:
+        print(f"Failed to load config: {args.config}")
+        print(e)
+        sys.exit(1)
+
+    print(f"Running with configuration: {args.config}")
+    print("Config contents:", config)
+
+    # Example: do something based on config
+    if config.get("mode") == "train":
+        print("Starting training process...")
+        # your training logic here
+    elif config.get("mode") == "test":
+        print("Running tests...")
+        # your test logic here
+    else:
+        print("Unknown mode — please specify 'train' or 'test'.")
+
 if __name__ == "__main__":
-    test = Network(size=[16,5,2])
-    size_of_file, data_labels = read_data("data/L30fft16.out")
-    test.test(data_labels)
-    test.train(data_labels, 5000)
-    test.test(data_labels) 
+    main()
+
     
     
