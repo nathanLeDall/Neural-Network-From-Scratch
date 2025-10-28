@@ -14,13 +14,12 @@ jobs:
     name: Run Python script with matrix configs
     runs-on: ubuntu-latest
 
-    # Automatically create a job matrix for multiple configurations
     strategy:
       matrix:
         config: [
           "configs/config_1.json",
         ]
-      fail-fast: false  # Continue other jobs even if one fails
+      fail-fast: false
 
     steps:
       - name: Checkout repository
@@ -48,13 +47,11 @@ jobs:
           python main.py --config ${{ matrix.config }}
 
       - name: Upload output and logs
-        if: always()  # ensures upload even if the run fails
-        uses: actions/upload-artifact@v4
-        with:
-          name: output-${{ matrix.config.replace('/', '_') }}
-          path: |
-            logs/
-            output/
-            *.log
-            *.txt
-            results/
+        if: always()
+        run: |
+            # sanitize matrix config name by replacing slashes with underscores
+            ARTIFACT_NAME=$(echo "${{ matrix.config }}" | tr '/' '_')
+            echo "Uploading artifact: $ARTIFACT_NAME"
+            gh actions upload-artifact \
+                --name "$ARTIFACT_NAME" \
+                --path logs/ output/ *.log *.txt results/
