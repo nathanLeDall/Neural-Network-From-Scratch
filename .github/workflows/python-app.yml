@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         config: [
-          "configs/config_1.json",
+          "config_1.json",
         ]
       fail-fast: false
 
@@ -47,11 +47,13 @@ jobs:
           python main.py --config ${{ matrix.config }}
 
       - name: Upload output and logs
-        if: always()
-        run: |
-            # sanitize matrix config name by replacing slashes with underscores
-            ARTIFACT_NAME=$(echo "${{ matrix.config }}" | tr '/' '_')
-            echo "Uploading artifact: $ARTIFACT_NAME"
-            gh actions upload-artifact \
-                --name "$ARTIFACT_NAME" \
-                --path logs/ output/ *.log *.txt results/
+        if: always()  # ensures upload even if the run fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: output-${{ matrix.config }}
+          path: |
+            logs/
+            output/
+            *.log
+            *.txt
+            results/
