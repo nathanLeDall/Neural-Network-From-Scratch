@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         config: [
-          "configs/config_a.json",
+          "configs/config_1.json",
         ]
       fail-fast: false  # Continue other jobs even if one fails
 
