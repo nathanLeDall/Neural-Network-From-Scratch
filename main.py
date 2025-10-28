@@ -142,6 +142,6 @@ if __name__ == "__main__":
     size_of_file, data_labels = read_data("data/L30fft16.out")
     test.test(data_labels)
     test.train(data_labels, 5000)
-    test.test(data_labels)
+    test.test(data_labels) 
     
     
