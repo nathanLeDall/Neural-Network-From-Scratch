@@ -155,15 +155,12 @@ def main():
     print(f"Running with configuration: {args.config}")
     print("Config contents:", config)
 
-    # Example: do something based on config
-    if config.get("mode") == "train":
-        print("Starting training process...")
-        # your training logic here
-    elif config.get("mode") == "test":
-        print("Running tests...")
-        # your test logic here
-    else:
-        print("Unknown mode — please specify 'train' or 'test'.")
+    test = Network(size=config.get("size"))
+    
+    size_of_file, data_labels = read_data(config.get("data_file"))
+    test.test(data_labels)
+    test.train(data_labels, config.get("epochs"))
+    test.test(data_labels)
 
 if __name__ == "__main__":
     main()

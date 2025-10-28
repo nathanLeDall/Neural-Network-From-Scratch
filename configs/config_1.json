@@ -1,6 +1,7 @@
 {
-	"mode": "train",
+	"size": [16,5,2],
 	"learning_rate": 0.01,
-	"epochs": 10
+	"epochs": 10,
+	"data_file": "L30fft16.out"
   }
   
