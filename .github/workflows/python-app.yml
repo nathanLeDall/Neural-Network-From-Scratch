@@ -46,3 +46,15 @@ jobs:
         run: |
           echo "Running with configuration: ${{ matrix.config }}"
           python main.py --config ${{ matrix.config }}
+
+      - name: Upload output and logs
+        if: always()  # ensures upload even if the run fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: output-${{ matrix.config }}
+          path: |
+            logs/
+            output/
+            *.log
+            *.txt
+            results/
