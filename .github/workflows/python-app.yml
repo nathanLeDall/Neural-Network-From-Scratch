@@ -19,8 +19,6 @@ jobs:
       matrix:
         config: [
           "configs/config_a.json",
-          "configs/config_b.json",
-          "configs/config_c.json"
         ]
       fail-fast: false  # Continue other jobs even if one fails
 
@@ -47,4 +45,4 @@ jobs:
       - name: Run script with config
         run: |
           echo "Running with configuration: ${{ matrix.config }}"
-          python your_script.py --config ${{ matrix.config }}
+          python main.py --config ${{ matrix.config }}
