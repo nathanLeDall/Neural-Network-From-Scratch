@@ -13,9 +13,17 @@ class Activation:
         if not derivative:
             return 1/(1+math.pow(math.e,-1*x))
         return x * (1 - x)
+    @staticmethod
+    def relu(x, derivative=False):
+        pass
+    @staticmethod
+    def tan_h(x, derivative=False):
+        if not derivative:
+            return math.tanh(x)
+        return 1 - x**2
         
 class Network:
-    def __init__(self, size=[2,3,2], activation_func=Activation.sigmoid, learning_rate=0.1):
+    def __init__(self, size=[2,3,2], activation_func=Activation.tan_h, learning_rate=0.1):
         self.size = size
         self.weights = []
         self.biases = []
@@ -137,10 +145,28 @@ def read_data(file_path):
     except Exception as e:
         print(f"An error occurred: {e}")
         return None, None, None
+def split_data(data):
+    np.random.seed(8)
+
+    # Shuffle indices
+    indices = np.arange(len(data))
+    np.random.shuffle(indices)
+
+    # Compute split points
+    n = len(data)
+    n1 = int(0.33 * n)
+    n2 = int(0.33 * n)
+
+    idx1 = indices[:n1]
+    idx2 = indices[n1:n1 + n2]
+    idx3 = indices[n1 + n2:]
+
+    return [data[i] for i in idx1], [data[i] for i in idx2], [data[i] for i in idx3]
 
 def main():
     parser = argparse.ArgumentParser(description="Run script with a configuration file.")
     parser.add_argument("--config", required=True, help="Path to configuration JSON file")
+    parser.add_argument("--cmdln", required=False, help="use this flag to run the code on the command line")
     args = parser.parse_args()
 
     # Load the config
@@ -154,20 +180,31 @@ def main():
 
     print(f"Running with configuration: {args.config}")
     print("Config contents:", config)
+    activation = Activation.sigmoid
+    
+    if config.get("activation") == "tanh":
+        activation = Activation.tan_h
 
-    test = Network(size=config.get("size"))
+    test = Network(size=config.get("size"), activation_func=activation)
     
     size_of_file, data_labels = read_data(os.path.join("data",config.get("data_file")))
-    test.test(data_labels)
-    test.train(data_labels, config.get("epochs"))
-    results = test.test(data_labels)
+
+    data1, data2, data3 = split_data(data_labels)
     
-    output_dir = "logs"
-    os.makedirs(output_dir, exist_ok=True)
+    test.train(data2+data3, config.get("epochs"))
     
-    results_file = os.path.join(output_dir, "results.json")
-    with open(results_file, "w") as f:
-        json.dump(results, f, indent=4)
+    results = test.test(data1)
+    if not args.cmdln:
+        output_dir = "logs"
+        os.makedirs(output_dir, exist_ok=True)
+    
+        results_file = os.path.join(output_dir, "results.json")
+        with open(results_file, "w") as f:
+            json.dump(results, f, indent=4)
+    else:
+        print(results)
+        
+    
 
 if __name__ == "__main__":
     main()
