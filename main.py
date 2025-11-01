@@ -23,13 +23,18 @@ class Activation:
         return 1 - x**2
         
 class Network:
-    def __init__(self, size=[2,3,2], activation_func=Activation.tan_h, learning_rate=0.1):
+    def __init__(self, size=[2,3,2], activation_func=Activation.tan_h, learning_rate=0.1, momentum=0):
         self.size = size
         self.weights = []
         self.biases = []
         self.data = []
         self.activation = activation_func
         self.learning_rate = learning_rate
+        self.momentum = 0.1
+
+        self.momentum_weights = [np.zeros_like(w) for w in self.weights]
+        self.momentum_bias = [np.zeros_like(w) for w in self.biases]
+        self.momentum = momentum
         for i in range(len(size)-1):
             self.weights.append(self.rand_matrix(size[i+1], size[i]))
             self.biases.append(self.rand_matrix(size[i+1], 1))
@@ -53,8 +58,29 @@ class Network:
 
             current = np.dot(self.weights[i], current)
             current = current+self.biases[i]
-            sigmoid_vec = np.vectorize(Activation.sigmoid)
-            current = sigmoid_vec(current)
+            current = self.activation_func(current)
+            
+            self.data.append(current)
+            #print (f" at {i} current ={current}")
+        return current
+    
+    def feed_forward_sigmoid_last(self, inputs):
+        if len(inputs)!=self.size[0]:
+            print("Ooopps")
+            
+        current = np.array(inputs, dtype=np.float32).reshape(-1, 1)
+        self.data = [current.copy()]
+        
+        for i in range(len(self.size)-1):
+
+            current = np.dot(self.weights[i], current)
+            current = current+self.biases[i]
+            
+            if i==len(self.weights) - 1:
+
+                current = Activation.sigmoid(current)
+            else:
+                current = Activation.sigmoid(current)
             
             self.data.append(current)
             #print (f" at {i} current ={current}")
@@ -77,6 +103,28 @@ class Network:
             errors = np.dot(self.weights[i].T, errors)
 
             gradient = self.activation(self.data[i], derivative=True)
+    
+    def momentum_back_prop(self, outputs, targets):
+        parsed = outputs
+        target_matrix = targets
+
+        errors = target_matrix - parsed
+
+        gradient = self.activation(parsed, derivative=True)
+
+        for i in range(len(self.size) - 2, -1, -1):
+            gradient_term = gradient * errors * self.learning_rate
+
+            
+            self.momentum_weights[i] += self.momentum * self.momentum_weights + np.dot(gradient_term, self.data[i].T)
+            self.momentum_bias[i] += self.momentum * self.momentum_bias + gradient_term
+
+            self.weights[i] = self.momentum_weights
+            self.biases[i] = self.momentum_bias
+
+            errors = np.dot(self.weights[i].T, errors)
+
+            gradient = self.activation(self.data[i], derivative=True)
 
         
     def train(self, inputs, epoch):
@@ -86,6 +134,14 @@ class Network:
             for j in range(len(inputs)):
                 output = self.feed_forward(rand_inputs[j][0].copy())
                 self.back_prop(output, rand_inputs[j][1])
+
+    def momentum_train(self, inputs, epoch):
+        rand_inputs = inputs.copy()
+        for i in range(epoch):
+            random.shuffle(rand_inputs)
+            for j in range(len(inputs)):
+                output = self.feed_forward(rand_inputs[j][0].copy())
+                self.momentum_back_prop(output, rand_inputs[j][1])
     
     def test(self, info):
         corr = 0
