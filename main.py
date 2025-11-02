@@ -76,9 +76,11 @@ class Network:
 
         errors = target_matrix - parsed
 
-        gradient = self.activation(parsed, derivative=True)
+        
         if self.sigmoid_last_bool:
             gradient = Activation.sigmoid(parsed, derivative=True)
+        else:
+            gradient = self.activation(parsed, derivative=True)
         
 
         for i in range(len(self.size) - 2, -1, -1):
