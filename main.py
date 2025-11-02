@@ -205,6 +205,8 @@ def main():
     print("Config contents:", config)
     activation = Activation.sigmoid
     results = {}
+    momentum = False
+    sigmoid_last = False
     if config.get("activation") == "tanh":
         activation = Activation.tan_h
     if config.get("momentum") == "1":
