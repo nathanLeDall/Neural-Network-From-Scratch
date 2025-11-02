@@ -212,25 +212,15 @@ def main():
     if config.get("sigmoid_last") == "1":
         sigmoid_last = True
 
-    test = Network(size=config.get("size"), activation_func=activation)
-    
 
     size_of_file, data_labels = read_data(os.path.join("data",config.get("data_file")))
 
     data1, data2, data3 = split_data(data_labels)
-    
+
+    test = Network(size=config.get("size"), activation_func=activation, momentum_bool=momentum, sigmoid_last_bool=sigmoid_last)    
     test.train(data2+data3, config.get("epochs"))
     results["standard"] = test.test(data1)
-
-
-    if momentum:
-        test2 = Network(size=config.get("size"), activation_func=activation, momentum=0.9, momentum_bool=True)
-        test2.train(data2+data3, config.get("epochs"))
-        results["momentum"] = test2.test(data1)
-    if sigmoid_last:
-        test3 = Network(size=config.get("size"), activation_func=activation, sigmoid_last_bool=True)
-        test3.train(data2+data3, config.get("epochs"))
-        results["sigmoid_last"] = test3.test(data1)
+        
     
     
     if not args.cmdln:
