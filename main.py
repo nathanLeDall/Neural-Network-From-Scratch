@@ -104,7 +104,7 @@ class Network:
     def train(self, inputs, epoch):
         rand_inputs = inputs.copy()
         for i in range(epoch):
-            print(f"\rProgress: {i/epoch}%", end="", flush=True)
+            print(f"\rProgress: {i} out of {epoch}", end="", flush=True)
             random.shuffle(rand_inputs)
             for j in range(len(inputs)):
                 output = self.feed_forward(rand_inputs[j][0].copy())
