@@ -1,6 +1,6 @@
 {
 	"size": [1000,750,250,30,2],
-	"learning_rate": 0.1,
+	"learning_rate": 0.01,
 	"epochs": 1000,
 	"data_file": "L30fft1000.out",
 	"activation": "tanh",

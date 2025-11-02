@@ -1,7 +1,9 @@
 {
-	"size": [16,3,2],
-	"learning_rate": 0.01,
-	"epochs": 100000,
-	"data_file": "L30fft16.out",
-	"activation": "tanh"
+	"size": [1000,750,250,30,2],
+	"learning_rate": 0.1,
+	"epochs": 100,
+	"data_file": "L30fft1000.out",
+	"activation": "tanh",
+	"momentum": "1",
+	"sigmoid_last": "1"
 }

@@ -23,7 +23,7 @@ class Activation:
         return 1 - np.tanh(x)**2
         
 class Network:
-    def __init__(self, size=[2,3,2], activation_func=Activation.tan_h, learning_rate=0.1, momentum=0):
+    def __init__(self, size=[2,3,2], activation_func=Activation.tan_h, learning_rate=0.1, momentum=0, momentum_bool=False, sigmoid_last_bool=False):
         self.size = size
         self.weights = []
         self.biases = []
@@ -31,7 +31,8 @@ class Network:
         self.activation = activation_func
         self.learning_rate = learning_rate
         self.momentum = 0.1
-
+        self.momentum_bool = momentum_bool
+        self.sigmoid_last_bool = sigmoid_last_bool
         
         self.momentum = momentum
         for i in range(len(size)-1):
@@ -59,32 +60,14 @@ class Network:
 
             current = np.dot(self.weights[i], current)
             current = current+self.biases[i]
-            current = self.activation(current)
-            
-            self.data.append(current)
-            #print (f" at {i} current ={current}")
-        return current
-    
-    def feed_forward_sigmoid_last(self, inputs):
-        if len(inputs)!=self.size[0]:
-            print("Ooopps")
-            
-        current = np.array(inputs, dtype=np.float32).reshape(-1, 1)
-        self.data = [current.copy()]
-        
-        for i in range(len(self.size)-1):
 
-            current = np.dot(self.weights[i], current)
-            current = current+self.biases[i]
-            
-            if i==len(self.weights) - 1:
+            if i==len(self.weights) - 1 and self.sigmoid_last_bool:
 
                 current = Activation.sigmoid(current)
             else:
                 current = self.activation(current)
             
             self.data.append(current)
-            #print (f" at {i} current ={current}")
         return current
 
     def back_prop(self, outputs, targets):
@@ -94,52 +77,22 @@ class Network:
         errors = target_matrix - parsed
 
         gradient = self.activation(parsed, derivative=True)
+        if self.sigmoid_last_bool:
+            gradient = Activation.sigmoid(parsed, derivative=True)
+        
 
         for i in range(len(self.size) - 2, -1, -1):
             gradient_term = gradient * errors * self.learning_rate
 
-            self.weights[i] += np.dot(gradient_term, self.data[i].T)
-            self.biases[i] += gradient_term
+            if self.momentum_bool:
+                self.momentum_weights[i] = self.momentum * self.momentum_weights[i] + np.dot(gradient_term, self.data[i].T)
+                self.momentum_bias[i] = self.momentum * self.momentum_bias[i] + gradient_term
 
-            errors = np.dot(self.weights[i].T, errors)
-
-            gradient = self.activation(self.data[i], derivative=True)
-    
-    def momentum_back_prop(self, outputs, targets):
-        parsed = outputs
-        target_matrix = targets
-
-        errors = target_matrix - parsed
-
-        gradient = self.activation(parsed, derivative=True)
-
-        for i in range(len(self.size) - 2, -1, -1):
-            gradient_term = gradient * errors * self.learning_rate
-
-            
-            self.momentum_weights[i] = self.momentum * self.momentum_weights[i] + np.dot(gradient_term, self.data[i].T)
-            self.momentum_bias[i] = self.momentum * self.momentum_bias[i] + gradient_term
-
-            self.weights[i] += self.momentum_weights[i]
-            self.biases[i] += self.momentum_bias[i]
-
-            errors = np.dot(self.weights[i].T, errors)
-
-            gradient = self.activation(self.data[i], derivative=True)
-
-    def sigmoid_last_backprob(self, outputs, targets):
-        parsed = outputs
-        target_matrix = targets
-
-        errors = target_matrix - parsed
-
-        gradient = Activation.sigmoid(parsed, derivative=True)
-
-        for i in range(len(self.size) - 2, -1, -1):
-            gradient_term = gradient * errors * self.learning_rate
-
-            self.weights[i] += np.dot(gradient_term, self.data[i].T)
-            self.biases[i] += gradient_term
+                self.weights[i] += self.momentum_weights[i]
+                self.biases[i] += self.momentum_bias[i]
+            else:
+                self.weights[i] += np.dot(gradient_term, self.data[i].T)
+                self.biases[i] += gradient_term
 
             errors = np.dot(self.weights[i].T, errors)
 
@@ -149,25 +102,11 @@ class Network:
     def train(self, inputs, epoch):
         rand_inputs = inputs.copy()
         for i in range(epoch):
+            print(f"\rProgress: {i/epoch}%", end="", flush=True)
             random.shuffle(rand_inputs)
             for j in range(len(inputs)):
                 output = self.feed_forward(rand_inputs[j][0].copy())
-                self.momentum_back_prop(output, rand_inputs[j][1])
-
-    def momentum_train(self, inputs, epoch):
-        rand_inputs = inputs.copy()
-        for i in range(epoch):
-            random.shuffle(rand_inputs)
-            for j in range(len(inputs)):
-                output = self.feed_forward(rand_inputs[j][0].copy())
-                self.momentum_back_prop(output, rand_inputs[j][1])
-    def sigmoid_last_train(self, inputs, epoch):
-        rand_inputs = inputs.copy()
-        for i in range(epoch):
-            random.shuffle(rand_inputs)
-            for j in range(len(inputs)):
-                output = self.feed_forward_sigmoid_last(rand_inputs[j][0].copy())
-                self.sigmoid_last_backprob(output, rand_inputs[j][1])
+                self.back_prop(output, rand_inputs[j][1])
 
     def test(self, info):
         corr = 0
@@ -283,12 +222,12 @@ def main():
 
 
     if momentum:
-        test2 = Network(size=config.get("size"), activation_func=activation, momentum=0.9)
+        test2 = Network(size=config.get("size"), activation_func=activation, momentum=0.9, momentum_bool=True)
         test2.train(data2+data3, config.get("epochs"))
         results["momentum"] = test2.test(data1)
     if sigmoid_last:
-        test3 = Network(size=config.get("size"), activation_func=activation)
-        test3.sigmoid_last_train(data2+data3, config.get("epochs"))
+        test3 = Network(size=config.get("size"), activation_func=activation, sigmoid_last_bool=True)
+        test3.train(data2+data3, config.get("epochs"))
         results["sigmoid_last"] = test3.test(data1)
     
     
