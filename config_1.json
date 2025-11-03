@@ -1,7 +1,7 @@
 {
-	"size": [1000,750,250,30,2],
-	"learning_rate": 0.1,
-	"epochs": 100,
+	"size": [1000,250,100,10,2],
+	"learning_rate": 0.000001,
+	"epochs": 200,
 	"data_file": "L30fft1000.out",
 	"activation": "tanh",
 	"momentum": "1",

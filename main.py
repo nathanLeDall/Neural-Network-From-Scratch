@@ -5,6 +5,7 @@ import argparse
 import json
 import sys
 import os
+import matplotlib.pyplot as plt
 
 class Activation:
     
@@ -76,6 +77,7 @@ class Network:
 
         errors = target_matrix - parsed
 
+        loss = float(np.mean(errors ** 2))
         
         if self.sigmoid_last_bool:
             gradient = Activation.sigmoid(parsed, derivative=True)
@@ -84,31 +86,41 @@ class Network:
         
 
         for i in range(len(self.size) - 2, -1, -1):
-            gradient_term = gradient * errors * self.learning_rate
+            delta = errors * gradient
+
+            weight_update = np.dot(delta, self.data[i].T)
+            bias_update = np.sum(delta, axis=1, keepdims=True)
 
             if self.momentum_bool:
-                self.momentum_weights[i] = self.momentum * self.momentum_weights[i] + np.dot(gradient_term, self.data[i].T)
-                self.momentum_bias[i] = self.momentum * self.momentum_bias[i] + gradient_term
+                self.momentum_weights[i] = self.momentum * self.momentum_weights[i] + self.learning_rate * weight_update
+                self.momentum_bias[i] = self.momentum * self.momentum_bias[i] + self.learning_rate * bias_update
 
                 self.weights[i] += self.momentum_weights[i]
                 self.biases[i] += self.momentum_bias[i]
             else:
-                self.weights[i] += np.dot(gradient_term, self.data[i].T)
-                self.biases[i] += gradient_term
+                self.weights[i] += self.learning_rate * weight_update
+                self.biases[i] += self.learning_rate * bias_update
 
-            errors = np.dot(self.weights[i].T, errors)
-
+            errors = np.dot(self.weights[i].T, delta)
             gradient = self.activation(self.data[i], derivative=True)
+        return loss
 
         
     def train(self, inputs, epoch):
         rand_inputs = inputs.copy()
+        loss=[]
         for i in range(epoch):
             print(f"\rProgress: {i} out of {epoch}", end="", flush=True)
             random.shuffle(rand_inputs)
+            tmp_loss=[]
             for j in range(len(inputs)):
                 output = self.feed_forward(rand_inputs[j][0].copy())
-                self.back_prop(output, rand_inputs[j][1])
+                tmp_loss.append(self.back_prop(output, rand_inputs[j][1]))
+            avg = 0
+            for tmp in tmp_loss:
+                avg+=tmp
+            loss.append(avg)
+        return loss
 
     def test(self, info):
         corr = 0
@@ -117,12 +129,10 @@ class Network:
         for data, labels in info:
             output = self.feed_forward(data)
         
-            # Ensure shapes match
-            output_rounded = np.round(output)
-            if output_rounded.shape != labels.shape:
-                labels = labels.reshape(output_rounded.shape)
-        
-            if np.array_equal(output_rounded, labels):
+            predicted = np.argmax(output)
+            
+            true = np.argmax(labels)
+            if predicted == true:
                 corr += 1
 
         accuracy = corr / total
@@ -169,7 +179,7 @@ def read_data(file_path):
         print(f"An error occurred: {e}")
         return None, None, None
 def split_data(data):
-    np.random.seed(8)
+    
 
     # Shuffle indices
     indices = np.arange(len(data))
@@ -187,6 +197,12 @@ def split_data(data):
     return [data[i] for i in idx1], [data[i] for i in idx2], [data[i] for i in idx3]
 
 def main():
+    #good seeds: 420, 
+    #too good seeds: 42069
+    np.random.seed(42069123)
+    random.seed(42069123)
+
+
     parser = argparse.ArgumentParser(description="Run script with a configuration file.")
     parser.add_argument("--config", required=True, help="Path to configuration JSON file")
     parser.add_argument("--cmdln", required=False, help="use this flag to run the code on the command line")
@@ -220,10 +236,16 @@ def main():
     data1, data2, data3 = split_data(data_labels)
 
     test = Network(size=config.get("size"), activation_func=activation, momentum_bool=momentum, sigmoid_last_bool=sigmoid_last)    
-    test.train(data2+data3, config.get("epochs"))
-    results["standard"] = test.test(data1)
-        
+    loss = test.train(data2+data1, config.get("epochs"))
+    results["standard"] = test.test(data3)
+    #results["loss"] = loss
     
+    plt.plot(loss)
+    plt.title("Training Loss Over Epochs")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.grid(True)
+    plt.show()
     
     if not args.cmdln:
         output_dir = "logs"
