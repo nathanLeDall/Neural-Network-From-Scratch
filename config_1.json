@@ -1,9 +1,9 @@
 {
-	"size": [1000,250,100,10,2],
-	"learning_rate": 0.000001,
-	"epochs": 200,
-	"data_file": "L30fft1000.out",
+	"size": [16,6,2],
+	"learning_rate": 0.1,
+	"epochs": 1000,
+	"data_file": "L30fft16.out",
 	"activation": "tanh",
 	"momentum": "1",
-	"sigmoid_last": "1"
+	"softmax_last": "0"
 }

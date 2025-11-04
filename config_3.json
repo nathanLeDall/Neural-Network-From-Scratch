@@ -5,5 +5,5 @@
 	"data_file": "L30fft1000.out",
 	"activation": "tanh",
 	"momentum": "0",
-	"sigmoid_last": "0"
+	"softmax_last": "0"
 }

@@ -16,24 +16,33 @@ class Activation:
         return x * (1 - x)
     @staticmethod
     def relu(x, derivative=False):
-        pass
+        if not derivative:
+            return np.maximum(0, x)
+        return np.where(x > 0, 1, 0)
     @staticmethod
     def tan_h(x, derivative=False):
         if not derivative:
             return np.tanh(x)
         return 1 - np.tanh(x)**2
+    @staticmethod
+    def softmax(x, derivative=False):
+        if not derivative:
+            exp_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
+            return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
+        s = Activation.softmax(x)
+        return s * (1 - s)
         
 class Network:
-    def __init__(self, size=[2,3,2], activation_func=Activation.tan_h, learning_rate=0.1, momentum=0, momentum_bool=False, sigmoid_last_bool=False):
+    def __init__(self, size=[2,3,2], activation_func=Activation.tan_h, learning_rate=0.1, momentum=0, momentum_bool=False, softmax_last_bool=False):
         self.size = size
         self.weights = []
         self.biases = []
         self.data = []
         self.activation = activation_func
         self.learning_rate = learning_rate
-        self.momentum = 0.1
+        self.momentum = 0.7
         self.momentum_bool = momentum_bool
-        self.sigmoid_last_bool = sigmoid_last_bool
+        self.softmax_last_bool = softmax_last_bool
         
         self.momentum = momentum
         for i in range(len(size)-1):
@@ -62,9 +71,9 @@ class Network:
             current = np.dot(self.weights[i], current)
             current = current+self.biases[i]
 
-            if i==len(self.weights) - 1 and self.sigmoid_last_bool:
+            if i==len(self.weights) - 1 and self.softmax_last_bool:
 
-                current = Activation.sigmoid(current)
+                current = Activation.softmax(current)
             else:
                 current = self.activation(current)
             
@@ -79,8 +88,8 @@ class Network:
 
         loss = float(np.mean(errors ** 2))
         
-        if self.sigmoid_last_bool:
-            gradient = Activation.sigmoid(parsed, derivative=True)
+        if self.softmax_last_bool:
+            gradient = Activation.softmax(parsed, derivative=True)
         else:
             gradient = self.activation(parsed, derivative=True)
         
@@ -199,8 +208,8 @@ def split_data(data):
 def main():
     #good seeds: 420, 
     #too good seeds: 42069
-    np.random.seed(42069123)
-    random.seed(42069123)
+    np.random.seed(420)
+    random.seed(420)
 
 
     parser = argparse.ArgumentParser(description="Run script with a configuration file.")
@@ -219,31 +228,46 @@ def main():
 
     print(f"Running with configuration: {args.config}")
     print("Config contents:", config)
-    activation = Activation.sigmoid
+    activation = Activation.softmax
     results = {}
     momentum = False
-    sigmoid_last = False
+    softmax_last = False
     if config.get("activation") == "tanh":
         activation = Activation.tan_h
     if config.get("momentum") == "1":
         momentum = True
-    if config.get("sigmoid_last") == "1":
-        sigmoid_last = True
+    if config.get("softmax_last") == "1":
+        softmax_last = True
 
-
-    size_of_file, data_labels = read_data(os.path.join("data",config.get("data_file")))
-
-    data1, data2, data3 = split_data(data_labels)
-
-    test = Network(size=config.get("size"), activation_func=activation, momentum_bool=momentum, sigmoid_last_bool=sigmoid_last)    
-    loss = test.train(data2+data1, config.get("epochs"))
-    results["standard"] = test.test(data3)
-    #results["loss"] = loss
+    graph_data = {}
     
-    plt.plot(loss)
+    for i in ["L30fft_32.out", "L30fft_64.out", "L30fft16.out", "L30fft25.out", "L30fft150.out", "L30fft1000.out"]:
+        size_of_file, data_labels = read_data(os.path.join("data",i))
+
+        data1, data2, data3 = split_data(data_labels)
+        
+        test = Network(size=[int(size_of_file[1]),int(size_of_file[1]/2),int(size_of_file[1]/4),int(size_of_file[1]/8),2], activation_func=Activation.tan_h, momentum_bool=momentum, softmax_last_bool=softmax_last)    
+        loss1 = test.train(data2+data1, config.get("epochs"))
+        results["standard"] = test.test(data3)
+    
+        loss2 = test.train(data3+data1, config.get("epochs"))
+        results["standard"] = test.test(data2)
+    
+        loss3 = test.train(data2+data3, config.get("epochs"))
+        results["standard"] = test.test(data1)
+        avg_loss = []
+        for j in range(len(loss1)):
+            avg_loss.append((loss1[j]+loss2[j]+loss3[j])/3)
+        graph_data[i+"_loss"] = avg_loss
+            
+
+    
+    for label, y_values in graph_data.items():
+        plt.plot(y_values, label=label)
     plt.title("Training Loss Over Epochs")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
+    plt.legend(title='Legend')
     plt.grid(True)
     plt.show()
     
