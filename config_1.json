@@ -1,8 +1,8 @@
 {
 	"size": [16,6,2],
-	"learning_rate": 0.1,
+	"learning_rate": 0.0001,
 	"epochs": 1000,
-	"data_file": "L30fft16.out",
+	"data_file": ["L30fft16.out"],
 	"activation": "tanh",
 	"momentum": "1",
 	"softmax_last": "0"

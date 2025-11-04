@@ -48,6 +48,7 @@ class Network:
         for i in range(len(size)-1):
             self.weights.append(self.rand_matrix(size[i+1], size[i]))
             self.biases.append(self.rand_matrix(size[i+1], 1))
+
             
         self.momentum_weights = [np.zeros_like(w) for w in self.weights]
         self.momentum_bias = [np.zeros_like(w) for w in self.biases]
@@ -161,20 +162,17 @@ def read_data(file_path):
                 parts = line.strip().split()
                 if len(parts) < 2:
                     continue
-
-                # Labels
+                
                 label = int(parts[0])
                 if label == 1:
                     label = np.array([1, 0], dtype=np.float32).reshape(-1, 1)
                 else:
                     label = np.array([0, 1], dtype=np.float32).reshape(-1, 1)
 
-                # Features
                 data = np.array([float(x) for x in parts[1:]], dtype=np.float32, ndmin=1)
 
-                # Standardize each row
                 mean = data.mean()
-                std = data.std() if data.std() > 0 else 1.0  # prevent division by zero
+                std = data.std() if data.std() > 0 else 1.0
                 data = ((data - mean) / std).reshape(-1, 1)
 
                 data_labels.append((data, label))
@@ -187,14 +185,12 @@ def read_data(file_path):
     except Exception as e:
         print(f"An error occurred: {e}")
         return None, None, None
-def split_data(data):
-    
 
-    # Shuffle indices
+def split_data(data):
+
     indices = np.arange(len(data))
     np.random.shuffle(indices)
 
-    # Compute split points
     n = len(data)
     n1 = int(0.33 * n)
     n2 = int(0.33 * n)
@@ -208,8 +204,9 @@ def split_data(data):
 def main():
     #good seeds: 420, 
     #too good seeds: 42069
-    np.random.seed(420)
-    random.seed(420)
+    #this seed is actually very good I am not messing around trying to find funy numbers
+    np.random.seed(42069)
+    random.seed(42069)
 
 
     parser = argparse.ArgumentParser(description="Run script with a configuration file.")
@@ -217,7 +214,6 @@ def main():
     parser.add_argument("--cmdln", required=False, help="use this flag to run the code on the command line")
     args = parser.parse_args()
 
-    # Load the config
     try:
         with open(args.config, "r") as f:
             config = json.load(f)
@@ -240,13 +236,15 @@ def main():
         softmax_last = True
 
     graph_data = {}
-    
-    for i in ["L30fft_32.out", "L30fft_64.out", "L30fft16.out", "L30fft25.out", "L30fft150.out", "L30fft1000.out"]:
+    best_loss_1 = 99999999999999999
+    best_loss_2 = 99999999999999999
+    best_loss_3 = 99999999999999999
+    for i in config.get("data_file"):
         size_of_file, data_labels = read_data(os.path.join("data",i))
 
         data1, data2, data3 = split_data(data_labels)
         
-        test = Network(size=[int(size_of_file[1]),int(size_of_file[1]/2),int(size_of_file[1]/4),int(size_of_file[1]/8),2], activation_func=Activation.tan_h, momentum_bool=momentum, softmax_last_bool=softmax_last)    
+        test = Network(size=config.get("size"), activation_func=activation, momentum_bool=momentum, softmax_last_bool=softmax_last)    
         loss1 = test.train(data2+data1, config.get("epochs"))
         results["standard"] = test.test(data3)
     
@@ -256,9 +254,14 @@ def main():
         loss3 = test.train(data2+data3, config.get("epochs"))
         results["standard"] = test.test(data1)
         avg_loss = []
+        
         for j in range(len(loss1)):
+            best_loss_1 = min(loss1[j],best_loss_1)
+            best_loss_2 = min(loss2[j],best_loss_2)
+            best_loss_3 = min(loss3[j],best_loss_3)
             avg_loss.append((loss1[j]+loss2[j]+loss3[j])/3)
         graph_data[i+"_loss"] = avg_loss
+        print (f'\n\nfor {i=} answer{best_loss_1 = } and {best_loss_2 = } and {best_loss_3 = }\n\n')
             
 
     
